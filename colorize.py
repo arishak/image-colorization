@@ -15,67 +15,18 @@ from matplotlib import cm
 
 fname = './models/gen0-2500.h5'
 images = read_all_images('./data/stl10_binary/test_X.bin')
-yuv_from_rgb = np.array([[ 0.299     ,  0.587     ,  0.114      ],
-                         [-0.14714119, -0.28886916,  0.43601035 ],
-                         [ 0.61497538, -0.51496512, -0.10001026 ]])
-y_from_rgb = np.transpose(np.array([yuv_from_rgb[0]]))
-rgb_from_yuv = np.linalg.inv(yuv_from_rgb)
-
-umax = 0.43601035
-vmax = 0.61497538
-
-def yuv2rgb(img):
-    return np.dot(img, np.transpose(rgb_from_yuv))
-
-def rgb2yuv(img):
-    return np.dot(img, np.transpose(yuv_from_rgb))
-
-class yuv2rgb_kernel(keras.initializers.Initializer):
-    def __init__(self):
-        self.rgb_from_yuv = K.cast_to_floatx(np.transpose(rgb_from_yuv))
-
-    def __call__(self, shape, dtype=None):
-        return K.reshape(self.rgb_from_yuv, shape)
-
-def wasserstein(y_true, y_pred):
-    return -K.mean(y_true * y_pred)
-
-def tall_sigmoid(x, scale=255):
-    return scale*K.sigmoid(x)
-
-def wide_tanh(x, scale=2):
-    return K.sigmoid(x/scale)
-
-def wide_sigmoid(x, scale=3):
-    return K.sigmoid(x/scale)
-
-def tanh_u(x):
-    return umax*K.tanh(x)
-
-def tanh_v(x):
-    return vmax*K.tanh(x)
-
-with custom_object_scope({"yuv2rgb_kernel":yuv2rgb_kernel}):
-    keras.losses.wasserstein = wasserstein
-    keras.activations.wide_tanh = wide_tanh
-    keras.activations.wide_sigmoid = wide_sigmoid
-    #keras.activations.tall_sigmoid = tall_sigmoid
-    keras.activations.tanh_u = tanh_u
-    keras.activations.tanh_v = tanh_v
-    colorizer = load_model(fname)
-    disc = load_model(fname.replace('gen', 'disc'))
+colorizer = utils.load(fname)
+disc = utils.load(fname.replace('gen', 'disc'))
 
 def gen_images(n):
     #np.random.seed(0)
     idxs = np.random.randint(0, len(images), size=n)
     real = images[idxs]/255
-    grey = np.dot(real, y_from_rgb)
+    grey = utils.to_grayscale(real)
     gen = colorizer.predict(grey)
     grey = np.repeat(grey, 3, axis=3)
-    #grey = yuv2rgb(np.concatenate((grey, umins, vmins), axis=3))
     #print(colorizer.evaluate(grey/255, real))
     print(np.min(gen), np.max(gen))
-    #real = yuv2rgb(rgb2yuv(real))
     return (grey, gen, real)
 
 def plot_images(rows=4, cols=4):
@@ -120,7 +71,7 @@ test_disc()
 def test_convert():
     img = mpimg.imread('test.jpg')
     cmap_grey = cm.get_cmap('gray')
-    grey = np.dot(img, y_from_rgb)/255
+    grey = utils.to_grayscale(img)/255
     grey = np.repeat(grey, 3, axis=2)
     print(grey)
     plt.imshow(img)
