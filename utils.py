@@ -1,6 +1,10 @@
 import numpy as np
 import keras.backend as K
+from keras.models import load_model
+from keras.utils.generic_utils import custom_object_scope
+from keras.initializers import Initializer
 import keras.losses
+# import keras.activations
 
 # constants
 IMG_H = 96
@@ -57,14 +61,16 @@ def wasserstein(y_true, y_pred):
 
 def load(fname):
     '''
-    class yuv2rgb_kernel(keras.initializers.Initializer):
+    class yuv2rgb_kernel(Initializer):
         def __init__(self):
             self.rgb_from_yuv = rgb_from_yuv
 
         def __call__(self, shape, dtype=None):
             return K.reshape(self.rgb_from_yuv, shape)
     '''
+    model = None
     with custom_object_scope({}):
         keras.losses.wasserstein = wasserstein
         # keras.activations.___ = ___
         model = load_model(fname + '.h5')
+    return model

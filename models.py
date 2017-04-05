@@ -1,19 +1,14 @@
 import numpy as np
-import utils.constants
-import utils.functions
+import utils
 from keras.layers import Input
 from keras.layers.core import Dense, Reshape, Lambda
 from keras.layers.convolutional import Conv1D, Conv2D, UpSampling2D
 from keras.layers.pooling import MaxPooling2D, GlobalAveragePooling2D
 from keras.layers.merge import Add, Concatenate
 from keras.layers.normalization import BatchNormalization
-from keras.models import Model, load_model
+from keras.models import Model
 from keras.utils import plot_model
 from keras.layers.advanced_activations import LeakyReLU
-from keras.utils.generic_utils import custom_object_scope
-from keras.initializers import Initializer
-import keras.losses
-import keras.activations
 from keras.optimizers import Adam
 import keras.backend as K
 import time
@@ -91,7 +86,7 @@ def get_disc(img_h=utils.IMG_H):
     return Model(inputs=ins, outputs=outs)
     
 def get_gan(gen, disc):
-    ins = Input(shape=(img_h, img_h, 1))
+    ins = Input(shape=gen.input_shape[1:])
     generated = gen(ins)
     outs = disc(generated)
     return Model(inputs=ins, outputs=outs)
@@ -102,12 +97,12 @@ def model_info(model, filename='model.png'):
 
 def train(fname, epochs=1, batch_size=50, to_load=None):
     images = read_all_images(fname)
-
+    
     # get models and compile
-    gen = get_gen(img_h)
+    gen = get_gen()
     gen.compile(loss='mean_absolute_error', optimizer='nadam')
 
-    disc = get_disc(img_h)
+    disc = get_disc()
     disc.trainable = True
     disc.compile(loss=utils.wasserstein, optimizer='nadam')
     disc._make_train_function()
@@ -139,7 +134,7 @@ def train(fname, epochs=1, batch_size=50, to_load=None):
             print('batch %d:' % (i//batch_size), end=' ', flush=True)
             start_time = time.time()
             batch_color = images[i:x]/255
-            batch_grey = np.dot(batch_color, y_from_rgb)
+            batch_grey = utils.to_grayscale(batch_color)
             batch_gen = gen.predict(batch_grey, batch_size=batch_size)
             disc.trainable = True
             for k in range(2):
@@ -159,7 +154,7 @@ def train_gen(fname, epochs=3, batch_size=50, to_load=None):
     if to_load:
         gen = utils.load('./regression models/gen' + to_load)
     else:
-        gen = get_gen(img_h)
+        gen = get_gen()
         gen.compile(loss='mean_squared_error', optimizer="nadam")
     images = read_all_images(fname)
     
@@ -170,11 +165,11 @@ def train_gen(fname, epochs=3, batch_size=50, to_load=None):
             print('batch %d:' % (i//batch_size), end=' ', flush=True)
             start_time = time.time()
             batch_color = images[i:x]/255
-            batch_grey = np.dot(batch_color, y_from_rgb)
+            batch_grey = utils.to_grayscale(batch_color)
             loss = gen.train_on_batch(batch_grey, batch_color)
             print('loss={:.4f}, time:{:.2f}'.format(loss, time.time()-start_time))
             if ((x <= 10000 and x % 2500 == 0) or x % 5000 == 0):
                 gen.save('./regression models/gen%d-%d.h5' % (j, x))
-            
-#train_gen('./data/unlabeled_X.bin', to_load='0-40000')
-train('./data/unlabeled_X.bin')
+                
+train_gen('./data/unlabeled_X.bin', to_load='0-40000')
+#train('./data/unlabeled_X.bin')
