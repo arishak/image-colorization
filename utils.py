@@ -6,13 +6,17 @@ from keras.initializers import Initializer
 import keras.losses
 # import keras.activations
 
-# constants
+#================#
+#   constants    #
+#================#
 IMG_H = 96
 BINS = 50
 UMAX = 0.43601035
 VMAX = 0.61497538
 
-# utility functions
+#=======================#
+#   utility functions   #
+#=======================#
 yuv_from_rgb = np.array([[ 0.299     ,  0.587     ,  0.114      ],
                          [-0.14714119, -0.28886916,  0.43601035 ],
                          [ 0.61497538, -0.51496512, -0.10001026 ]])
@@ -20,17 +24,18 @@ rgb_from_yuv = np.linalg.inv(yuv_from_rgb)
 y_from_rgb_T = np.transpose(np.array([yuv_from_rgb[0]]))
 rgb_from_yuv_T = K.cast_to_floatx(np.transpose(rgb_from_yuv))
 
-'''
+# class to u/v values
 def bin2u(x):
     x = K.cast(x, K.floatx())
-    2*umax*(x+0.5)/bins - umax
+    2*UMAX*(x+0.5)/BINS - UMAX
     return x
 
 def bin2v(x):
     x = K.cast(x, K.floatx())
-    2*vmax*(x+0.5)/bins - vmax
+    2*VMAX*(x+0.5)/BINS - VMAX
     return x
 
+# activations
 def tanh_u(x):
     return umax*K.tanh(x)
 
@@ -45,8 +50,12 @@ def wide_sigmoid(x, scale=2):
 
 def wide_tanh(x, scale=2):
     return K.sigmoid(x/scale)
-'''
 
+# losses
+def wasserstein(y_true, y_pred):
+    return K.mean(y_true * y_pred)
+
+# image color space transformations
 def rgb2yuv(img):
     return np.dot(img, np.transpose(yuv_from_rgb))
 
@@ -55,9 +64,6 @@ def to_grayscale(img):
 
 def yuv2rgb(img):
     return np.dot(img, np.transpose(rgb_from_yuv))
-
-def wasserstein(y_true, y_pred):
-    return K.mean(y_true * y_pred)
 
 def load(fname):
     '''

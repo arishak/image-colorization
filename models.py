@@ -100,7 +100,7 @@ def train(fname, epochs=1, batch_size=50, to_load=None):
     
     # get models and compile
     gen = get_gen()
-    gen.compile(loss='mean_absolute_error', optimizer='nadam')
+    gen.compile(loss='mean_squared_error', optimizer='nadam')
 
     disc = get_disc()
     disc.trainable = True
@@ -170,6 +170,7 @@ def train_gen(fname, epochs=3, batch_size=50, to_load=None):
             print('loss={:.4f}, time:{:.2f}'.format(loss, time.time()-start_time))
             if ((x <= 10000 and x % 2500 == 0) or x % 5000 == 0):
                 gen.save('./regression models/gen%d-%d.h5' % (j, x))
-                
-train_gen('./data/unlabeled_X.bin', to_load='0-40000')
-#train('./data/unlabeled_X.bin')
+
+if __name__ == "__main__":               
+    #train_gen('./data/unlabeled_X.bin', to_load='0-40000')
+    train('./data/unlabeled_X.bin')
