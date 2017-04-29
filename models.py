@@ -1,5 +1,5 @@
+import time
 import numpy as np
-import utils
 from keras.layers import Input
 from keras.layers.core import Dense, Reshape, Lambda
 from keras.layers.convolutional import Conv1D, Conv2D, UpSampling2D
@@ -11,8 +11,9 @@ from keras.utils import plot_model
 from keras.layers.advanced_activations import LeakyReLU
 from keras.optimizers import Adam
 import keras.backend as K
-import time
+from keras.applications.vgg16 import VGG16
 from stl10_input import read_all_images
+import utils
 #import skimage.io
 
 #img = skimage.io.imread('test.jpg')
@@ -29,9 +30,13 @@ def get_test(img_h=utils.IMG_H):
     x = yuv2rgbLayer(inputs)
     return Model(inputs=inputs, outputs=x)
 
+
 def get_gen(img_h=utils.IMG_H):
+    vgg16 = VGG16(include_top = False, input_shape = (96, 96, 3))
+    print(vgg16.summary())
     inputs = Input(shape=(img_h, img_h, 1))
-    x = Conv2D(64, (3, 3), activation='elu', padding='same')(inputs)
+    x = Concatenate()([inputs, inputs, inputs])
+    x = Conv2D(64, (3, 3), activation='elu', padding='same')(x)
     concat1 = Conv2D(64, (3, 3), activation='elu', padding='same')(x)
     x = MaxPooling2D(pool_size=(2, 2))(concat1)
     x = Conv2D(128, (3, 3), activation='elu', padding='same')(x)
@@ -62,7 +67,15 @@ def get_gen(img_h=utils.IMG_H):
     #out_v = Conv2D(1, (3, 3), activation=tanh_v, padding="same")(x)
     #out = yuv2rgbLayer(out)
     out = Conv2D(3, (1, 1), activation="sigmoid")(out)
-    return Model(inputs=inputs, outputs=out)
+    model = Model(inputs=inputs, outputs=out)
+    print(model.summary())
+    c = 0
+    for i in range(14):
+        if type(model.layers[i+c]) != type(vgg16.layers[i]):
+            c += 1
+        #print(i, vgg16.layers[i], model.layers[i+c])
+        model.layers[i+c].set_weights(vgg16.layers[i].get_weights())
+    return model
 
 def get_disc(img_h=utils.IMG_H):
     ins = Input(shape=(img_h, img_h, 3))

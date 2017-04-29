@@ -7,8 +7,8 @@ from stl10_input import read_all_images
 import utils
 import models
 
-fname = './models/gen0-2500'
-images = read_all_images('./data/stl10_binary/test_X.bin')
+fname = './models/gen0-5000'
+images = read_all_images('./data/test_X.bin')
 colorizer = utils.load(fname)
 disc = utils.load(fname.replace('gen', 'disc'))
 
