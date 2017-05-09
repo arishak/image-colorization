@@ -7,10 +7,12 @@ from stl10_input import read_all_images
 import utils
 import models
 
-fname = './models/gen0-5000'
+fname = './models/saves/gen0-30000'
 images = read_all_images('./data/test_X.bin')
 colorizer = utils.load(fname)
 disc = utils.load(fname.replace('gen', 'disc'))
+#disc = utils.load('./models/saves/disc0-100000')
+print('loaded')
 
 def gen_images(n):
     #np.random.seed(0)
@@ -18,6 +20,7 @@ def gen_images(n):
     real = images[idxs]/255
     grey = utils.to_grayscale(real)
     gen = colorizer.predict(grey)
+    print(gen)
     grey = np.repeat(grey, 3, axis=3)
     print(np.min(gen), np.max(gen))
     return (grey, gen, real)
@@ -48,7 +51,7 @@ def test_disc(n=20):
 def test_gan(n=20, img_h=utils.IMG_H):
     (grey, gen, real) = gen_images(n)
     GAN = models.get_gan(colorizer, disc)
-    print(GAN.predict(grey[...,0:1]))
+    print('GAN', GAN.predict(grey[...,0:1]))
 
 def test_convert():
     img = mpimg.imread('test.jpg')
